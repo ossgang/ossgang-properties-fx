@@ -9,7 +9,10 @@ import io.github.ossgang.properties.core.Property;
 import io.github.ossgang.properties.core.Sink;
 import io.github.ossgang.properties.core.Sinks;
 import io.github.ossgang.properties.core.Source;
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.*;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 
 
 public class JavaFxProperties {
@@ -36,6 +39,21 @@ public class JavaFxProperties {
     public static Property<Boolean> wrap(BooleanProperty booleanProperty) {
         return new JavaFxWrapperProperty<>(booleanProperty.asObject());
     }
+
+
+    public static DoubleProperty doubleProperty(Property<Double> property) {
+        System.out.println(property);
+        /* just  first try ... might still lead to recursions :-(*/
+        SimpleDoubleProperty simpleDoubleProperty = new SimpleDoubleProperty(property.get());
+        property.getSource().asStream().subscribe(v -> {
+            if (!Objects.equal(v, simpleDoubleProperty.get())) {
+                simpleDoubleProperty.set(v);
+            }
+        });
+        simpleDoubleProperty.addListener((prop, oldVal, newVal) -> property.set(newVal.doubleValue()));
+        return simpleDoubleProperty;
+    }
+
 
     private static class JavaFxWrapperProperty<T> implements Property<T> {
         private final Sink<T> updateStream = Sinks.createSink();
